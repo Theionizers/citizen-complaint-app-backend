@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.core.security import hash_password
+from app.core.security import hash_password,verify_password
 from app.models import Role, User
 from app.db.database import get_db
 from app.models import User
-from app.schemas.auth import RegisterRequest
+from app.schemas.auth import RegisterRequest,LoginRequest
 
 
 router = APIRouter(
@@ -61,4 +61,34 @@ def register(
         "name": user.name,
         "email": user.email,
         "role": citizen_role.name
+    }
+
+@router.post("/login")
+def login(
+    data: LoginRequest,
+    db: Session = Depends(get_db)
+):
+    user = (
+        db.query(User)
+        .filter(User.email == data.email)
+        .first()
+    )
+
+    if user is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid email or password"
+        )
+
+    if not verify_password(data.password, user.password_hash):
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid email or password"
+        )
+
+    return {
+        "message": "Login successful",
+        "user_id": user.id,
+        "email": user.email,
+        "role": user.role.name
     }
