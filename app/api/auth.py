@@ -5,7 +5,11 @@ from app.models import Role, User
 from app.db.database import get_db
 from app.models import User
 from app.schemas.auth import RegisterRequest,LoginRequest
-
+from app.core.security import (
+    create_access_token,
+    hash_password,
+    verify_password,
+)
 
 router = APIRouter(
     prefix="/auth",
@@ -86,9 +90,12 @@ def login(
             detail="Invalid email or password"
         )
 
+    access_token = create_access_token(
+        user_id=user.id,
+        role=user.role.name
+    )
+
     return {
-        "message": "Login successful",
-        "user_id": user.id,
-        "email": user.email,
-        "role": user.role.name
+        "access_token": access_token,
+        "token_type": "bearer"
     }
