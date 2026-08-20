@@ -9,13 +9,19 @@ from fastapi.security import HTTPBearer
 
 oauth2_scheme = HTTPBearer()
 def get_current_user(
-    credentials = Depends(oauth2_scheme),
+    credentials=Depends(oauth2_scheme),
     db: Session = Depends(get_db)
 ) -> User:
 
     token = credentials.credentials
 
-    payload = decode_access_token(token)
+    try:
+        payload = decode_access_token(token)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token"
+        )
 
     user_id = payload.get("sub")
 
