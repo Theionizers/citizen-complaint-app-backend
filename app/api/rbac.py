@@ -1,20 +1,3 @@
-from app.api.auth import router as auth_router
-from fastapi import FastAPI
-from app.api.rbac import router as rbac_router
-
-app = FastAPI(
-    title="OZOCO AI Citizen Service Platform",
-    version="1.0.0"
-)
-
-
-@app.get("/")
-def root():
-    return {"message": "OZOCO API is running"}
-
-app.include_router(auth_router)
-app.include_router(rbac_router)
-
 from fastapi import APIRouter, Depends
 
 from app.core.dependencies import require_role
