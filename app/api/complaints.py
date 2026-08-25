@@ -102,3 +102,22 @@ def get_my_complaints(
     )
 
     return complaints
+
+@router.get(
+    "/officer",
+    response_model=list[ComplaintResponse]
+)
+def get_officer_complaints(
+    current_user: User = Depends(require_role("officer")),
+    db: Session = Depends(get_db)
+):
+    complaints = (
+        db.query(Complaint)
+        .filter(
+            Complaint.department_id == current_user.department_id
+        )
+        .order_by(Complaint.created_at.desc())
+        .all()
+    )
+
+    return complaints
