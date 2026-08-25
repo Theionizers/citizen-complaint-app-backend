@@ -1,7 +1,7 @@
 from app.api.auth import router as auth_router
 from fastapi import FastAPI
 from app.api.rbac import router as rbac_router
-
+from app.api.complaints import router as complaints_router
 app = FastAPI(
     title="OZOCO AI Citizen Service Platform",
     version="1.0.0"
@@ -14,6 +14,7 @@ def root():
 
 app.include_router(auth_router)
 app.include_router(rbac_router)
+app.include_router(complaints_router)
 
 from fastapi import APIRouter, Depends
 
