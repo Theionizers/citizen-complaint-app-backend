@@ -6,7 +6,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
 
 if TYPE_CHECKING:
-    from app.models import Role
+    from app.models import Role,Department
 
 
 class User(Base):
@@ -28,5 +28,11 @@ class User(Base):
         ForeignKey("roles.id"),
         nullable=False
     )
+    department_id: Mapped[int | None] = mapped_column(
+    ForeignKey("departments.id"),
+    nullable=True
+)
+
+    department: Mapped["Department | None"] = relationship()
 
     role: Mapped["Role"] = relationship()
