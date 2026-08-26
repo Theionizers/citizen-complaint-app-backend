@@ -1,3 +1,4 @@
+from app.core.cors import setup_cors
 from app.api.auth import router as auth_router
 from fastapi import FastAPI
 from app.api.rbac import router as rbac_router
@@ -7,7 +8,7 @@ app = FastAPI(
     version="1.0.0"
 )
 
-
+setup_cors(app)
 @app.get("/")
 def root():
     return {"message": "OZOCO API is running"}
