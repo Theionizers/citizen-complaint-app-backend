@@ -166,3 +166,48 @@ def update_complaint_status(
     db.refresh(complaint)
 
     return complaint
+
+@router.patch(
+    "/{complaint_id}/assign",
+    response_model=ComplaintResponse
+)
+def assign_complaint(
+    complaint_id: int,
+    data: ComplaintAssignment,
+    current_user: User = Depends(require_role("admin")),
+    db: Session = Depends(get_db)
+):
+    complaint = (
+        db.query(Complaint)
+        .filter(Complaint.id == complaint_id)
+        .first()
+    )
+
+    if complaint is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Complaint not found"
+        )
+
+    officer = (
+        db.query(User)
+        .filter(
+            User.id == data.officer_id,
+            User.department_id == complaint.department_id
+        )
+        .first()
+    )
+
+    if officer is None:
+        raise HTTPException(
+            status_code=400,
+            detail="Officer does not belong to complaint department"
+        )
+
+    complaint.assigned_officer_id = officer.id
+    complaint.status = "assigned"
+
+    db.commit()
+    db.refresh(complaint)
+
+    return complaint
