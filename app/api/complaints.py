@@ -1,11 +1,12 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends,HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.dependencies import require_role
 from app.db.database import get_db
 from app.models import Complaint, Department, Service, User
-from app.schemas.complaint import ComplaintCreate, ComplaintResponse
+from app.schemas.complaint import ComplaintCreate, ComplaintResponse,ComplaintStatusUpdate
 from app.services.complaint_router import route_complaint
+
 
 router = APIRouter(
     prefix="/complaints",
@@ -121,3 +122,47 @@ def get_officer_complaints(
     )
 
     return complaints
+
+@router.patch(
+    "/{complaint_id}/status",
+    response_model=ComplaintResponse
+)
+def update_complaint_status(
+    complaint_id: int,
+    data: ComplaintStatusUpdate,
+    current_user: User = Depends(require_role("officer")),
+    db: Session = Depends(get_db)
+):
+    complaint = (
+        db.query(Complaint)
+        .filter(
+            Complaint.id == complaint_id,
+            Complaint.department_id == current_user.department_id
+        )
+        .first()
+    )
+
+    if complaint is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Complaint not found"
+        )
+
+    allowed_statuses = {
+        "under_review",
+        "in_progress",
+        "resolved"
+    }
+
+    if data.status not in allowed_statuses:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid complaint status"
+        )
+
+    complaint.status = data.status
+
+    db.commit()
+    db.refresh(complaint)
+
+    return complaint

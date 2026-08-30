@@ -6,7 +6,8 @@ from pydantic import BaseModel, ConfigDict
 class ComplaintCreate(BaseModel):
     description: str
 
-
+class ComplaintStatusUpdate(BaseModel):
+    status: str
 class ComplaintResponse(BaseModel):
     id: int
     description: str
@@ -21,3 +22,7 @@ class ComplaintResponse(BaseModel):
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class ComplaintAssignment(BaseModel):
+    officer_id: int
