@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.core.dependencies import require_role
 from app.db.database import get_db
 from app.models import Complaint, Department, Service, User,Role
-from app.schemas.complaint import ComplaintCreate, ComplaintResponse,ComplaintStatusUpdate,ComplaintAssignment,AdminOfficerResponse
+from app.schemas.complaint import ComplaintCreate, ComplaintResponse,ComplaintStatusUpdate,ComplaintAssignment,AdminOfficerResponse,OfficerDepartmentUpdate
 from app.services.complaint_router import route_complaint
 
 
@@ -190,13 +190,15 @@ def assign_complaint(
         )
 
     officer = (
-        db.query(User)
-        .filter(
-            User.id == data.officer_id,
-            User.department_id == complaint.department_id
-        )
-        .first()
+    db.query(User)
+    .join(User.role)
+    .filter(
+        User.id == data.officer_id,
+        User.department_id == complaint.department_id,
+        Role.name == "officer"
     )
+    .first()
+)
 
     if officer is None:
         raise HTTPException(
