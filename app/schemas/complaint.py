@@ -34,3 +34,6 @@ class AdminOfficerResponse(BaseModel):
     department_id: int | None
 
     model_config = ConfigDict(from_attributes=True)
+
+class OfficerDepartmentUpdate(BaseModel):
+    department_id: int

@@ -266,6 +266,70 @@ def get_admin_officers(
     return officers
 
 @router.get(
+    "/admin/departments"
+)
+def get_admin_departments(
+    current_user: User = Depends(require_role("admin")),
+    db: Session = Depends(get_db)
+):
+    departments = (
+        db.query(Department)
+        .order_by(Department.id.asc())
+        .all()
+    )
+
+    return departments
+
+@router.patch(
+    "/admin/officers/{officer_id}/department"
+)
+def update_officer_department(
+    officer_id: int,
+    data: OfficerDepartmentUpdate,
+    current_user: User = Depends(require_role("admin")),
+    db: Session = Depends(get_db)
+):
+    officer = (
+        db.query(User)
+        .join(User.role)
+        .filter(
+            User.id == officer_id,
+            Role.name == "officer"
+        )
+        .first()
+    )
+
+    if officer is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Officer not found"
+        )
+
+    department = (
+        db.query(Department)
+        .filter(Department.id == data.department_id)
+        .first()
+    )
+
+    if department is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Department not found"
+        )
+
+    officer.department_id = department.id
+
+    db.commit()
+    db.refresh(officer)
+
+    return {
+        "id": officer.id,
+        "name": officer.name,
+        "email": officer.email,
+        "department_id": officer.department_id
+    }
+
+@router.get(
     "/admin/{complaint_id}",
     response_model=ComplaintResponse
 )
