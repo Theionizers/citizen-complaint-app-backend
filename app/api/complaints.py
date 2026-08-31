@@ -247,3 +247,27 @@ def get_all_complaints(
     )
 
     return complaints
+
+
+@router.get(
+    "/admin/{complaint_id}",
+    response_model=ComplaintResponse
+)
+def get_admin_complaint(
+    complaint_id: int,
+    current_user: User = Depends(require_role("admin")),
+    db: Session = Depends(get_db)
+):
+    complaint = (
+        db.query(Complaint)
+        .filter(Complaint.id == complaint_id)
+        .first()
+    )
+
+    if complaint is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Complaint not found"
+        )
+
+    return complaint
