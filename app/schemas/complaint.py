@@ -26,3 +26,11 @@ class ComplaintResponse(BaseModel):
 
 class ComplaintAssignment(BaseModel):
     officer_id: int
+
+class AdminOfficerResponse(BaseModel):
+    id: int
+    name: str
+    email: str
+    department_id: int | None
+
+    model_config = ConfigDict(from_attributes=True)

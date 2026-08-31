@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.core.dependencies import require_role
 from app.db.database import get_db
 from app.models import Complaint, Department, Service, User,Role
-from app.schemas.complaint import ComplaintCreate, ComplaintResponse,ComplaintStatusUpdate,ComplaintAssignment
+from app.schemas.complaint import ComplaintCreate, ComplaintResponse,ComplaintStatusUpdate,ComplaintAssignment,AdminOfficerResponse
 from app.services.complaint_router import route_complaint
 
 
@@ -247,7 +247,23 @@ def get_all_complaints(
     )
 
     return complaints
+@router.get(
+    "/admin/officers",
+    response_model=list[AdminOfficerResponse]
+)
+def get_admin_officers(
+    current_user: User = Depends(require_role("admin")),
+    db: Session = Depends(get_db)
+):
+    officers = (
+        db.query(User)
+        .join(User.role)
+        .filter(Role.name == "officer")
+        .order_by(User.id.asc())
+        .all()
+    )
 
+    return officers
 
 @router.get(
     "/admin/{complaint_id}",
@@ -272,19 +288,4 @@ def get_admin_complaint(
 
     return complaint
 
-@router.get(
-    "/admin/officers",
-)
-def get_admin_officers(
-    current_user: User = Depends(require_role("admin")),
-    db: Session = Depends(get_db)
-):
-    officers = (
-        db.query(User)
-        .join(User.role)
-        .filter(Role.name == "officer")
-        .order_by(User.id.asc())
-        .all()
-    )
 
-    return officers
