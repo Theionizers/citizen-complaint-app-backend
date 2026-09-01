@@ -78,7 +78,9 @@ def create_complaint(
         routing_confidence=routing_result["routing_confidence"],
         citizen_id=current_user.id,
         department_id=department.id,
-        service_id=service.id
+        service_id=service.id,
+        latitude=data.latitude,
+        longitude=data.longitude,
     )
 
     db.add(complaint)

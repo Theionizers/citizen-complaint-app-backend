@@ -5,6 +5,8 @@ from pydantic import BaseModel, ConfigDict
 
 class ComplaintCreate(BaseModel):
     description: str
+    latitude: float | None = None
+    longitude: float | None = None
 
 class ComplaintStatusUpdate(BaseModel):
     status: str
