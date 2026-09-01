@@ -3,6 +3,7 @@ from app.api.auth import router as auth_router
 from fastapi import FastAPI
 from app.api.rbac import router as rbac_router
 from app.api.complaints import router as complaints_router
+from app.core.cors import setup_cors
 app = FastAPI(
     title="OZOCO AI Citizen Service Platform",
     version="1.0.0"
@@ -59,3 +60,5 @@ def admin_test(
         "user_id": current_user.id,
         "role": current_user.role.name
     }
+
+setup_cors(app)
