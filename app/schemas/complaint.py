@@ -20,6 +20,8 @@ class ComplaintResponse(BaseModel):
     assigned_officer_id: int | None
     created_at: datetime
     updated_at: datetime
+    latitude: float | None
+    longitude: float | None
 
     model_config = ConfigDict(from_attributes=True)
 
