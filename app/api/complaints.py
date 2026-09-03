@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends,HTTPException
+from fastapi import APIRouter, Depends,HTTPException,UploadFile,File
 from sqlalchemy.orm import Session
 
 from app.core.dependencies import require_role
@@ -6,6 +6,7 @@ from app.db.database import get_db
 from app.models import Complaint, Department, Service, User,Role
 from app.schemas.complaint import ComplaintCreate, ComplaintResponse,ComplaintStatusUpdate,ComplaintAssignment,AdminOfficerResponse,OfficerDepartmentUpdate
 from app.services.complaint_router import route_complaint
+from app.services.transcription import transcribe_audio
 
 
 router = APIRouter(
@@ -383,3 +384,21 @@ def get_my_complaint(
 
     return complaint
 
+
+@router.post("/transcribe")
+def transcribe_complaint_audio(
+    audio: UploadFile = File(...),
+    current_user: User = Depends(require_role("citizen")),
+):
+    try:
+        transcription = transcribe_audio(audio.file)
+
+        return {
+            "text": transcription
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Audio transcription failed: {str(e)}"
+        )
