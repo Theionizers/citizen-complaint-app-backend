@@ -357,6 +357,23 @@ def get_admin_complaint(
 
     return complaint
 
+@router.post("/transcribe")
+def transcribe_complaint_audio(
+    audio: UploadFile = File(...),
+    current_user: User = Depends(require_role("citizen")),
+):
+    try:
+        transcription = transcribe_audio(audio.file)
+
+        return {
+            "text": transcription
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Audio transcription failed: {str(e)}"
+        )
 
 @router.get(
     "/{complaint_id}",
@@ -385,20 +402,3 @@ def get_my_complaint(
     return complaint
 
 
-@router.post("/transcribe")
-def transcribe_complaint_audio(
-    audio: UploadFile = File(...),
-    current_user: User = Depends(require_role("citizen")),
-):
-    try:
-        transcription = transcribe_audio(audio.file)
-
-        return {
-            "text": transcription
-        }
-
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Audio transcription failed: {str(e)}"
-        )

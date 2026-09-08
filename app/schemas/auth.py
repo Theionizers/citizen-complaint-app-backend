@@ -9,3 +9,9 @@ class RegisterRequest(BaseModel):
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
+
+class OfficerCreate(BaseModel):
+    name: str
+    email: str
+    password: str
+    department_id: int
