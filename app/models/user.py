@@ -2,6 +2,8 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from datetime import datetime
+from sqlalchemy import DateTime, String
 
 from app.db.base import Base
 
@@ -36,3 +38,28 @@ class User(Base):
     department: Mapped["Department | None"] = relationship()
 
     role: Mapped["Role"] = relationship()
+
+    is_email_verified: Mapped[bool] = mapped_column(
+    default=False,
+    nullable=False
+)
+
+    email_verification_token_hash: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True
+    )
+
+    email_verification_expires_at: Mapped[datetime | None] = mapped_column(
+        DateTime,
+        nullable=True
+    )
+
+    password_reset_token_hash: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True
+    )
+
+    password_reset_expires_at: Mapped[datetime | None] = mapped_column(
+        DateTime,
+        nullable=True
+    )
