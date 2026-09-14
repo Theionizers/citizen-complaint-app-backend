@@ -1,9 +1,9 @@
-import resend
+import smtplib
+import ssl
+
+from email.message import EmailMessage
 
 from app.core.config import settings
-
-
-resend.api_key = settings.RESEND_API_KEY
 
 
 def send_email(
@@ -11,11 +11,33 @@ def send_email(
     subject: str,
     html: str,
 ):
-    params: resend.Emails.SendParams = {
-        "from": settings.EMAIL_FROM,
-        "to": [to_email],
-        "subject": subject,
-        "html": html,
-    }
+    message = EmailMessage()
 
-    return resend.Emails.send(params)
+    message["From"] = settings.EMAIL_FROM
+    message["To"] = to_email
+    message["Subject"] = subject
+
+    message.set_content(
+        "Please open this email in an HTML-compatible email client."
+    )
+
+    message.add_alternative(
+        html,
+        subtype="html"
+    )
+
+    context = ssl.create_default_context()
+
+    with smtplib.SMTP_SSL(
+        settings.SMTP_HOST,
+        settings.SMTP_PORT,
+        context=context,
+        timeout=30,
+    ) as server:
+
+        server.login(
+            settings.SMTP_USERNAME,
+            settings.SMTP_PASSWORD,
+        )
+
+        server.send_message(message)

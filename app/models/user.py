@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime
-from sqlalchemy import DateTime, String
+from sqlalchemy import DateTime, String,Integer
 
 from app.db.base import Base
 
@@ -60,6 +60,27 @@ class User(Base):
     )
 
     password_reset_expires_at: Mapped[datetime | None] = mapped_column(
+        DateTime,
+        nullable=True
+    )
+
+    email_otp_hash: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True
+    )
+
+    email_otp_expires_at: Mapped[datetime | None] = mapped_column(
+        DateTime,
+        nullable=True
+    )
+
+    email_otp_attempts: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+        nullable=False
+    )
+
+    email_otp_last_sent_at: Mapped[datetime | None] = mapped_column(
         DateTime,
         nullable=True
     )

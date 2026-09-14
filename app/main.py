@@ -5,6 +5,8 @@ from app.api.rbac import router as rbac_router
 from app.api.complaints import router as complaints_router
 from app.core.cors import setup_cors
 from app.api.admin import router as admin_router
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 app = FastAPI(
     title="OZOCO AI Citizen Service Platform",
     version="1.0.0"
@@ -64,3 +66,4 @@ def admin_test(
     }
 
 setup_cors(app)
+

@@ -1,13 +1,15 @@
+# app/services/test_email.py
+
 from app.services.email_service import send_email
 
 
 send_email(
-    to_email="sskhilonaghar@gmail.com",
-    subject="OZOCO Test Email",
+    to_email="pwallah69@gmail.com",
+    subject="OZOCO SMTP Test",
     html="""
-    <h1>OZOCO</h1>
-    <p>Email service is working correctly.</p>
-    """
+    <h2>SMTP test successful</h2>
+    <p>This email was sent from the OZOCO backend.</p>
+    """,
 )
 
 print("Email sent successfully")
