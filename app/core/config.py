@@ -27,6 +27,12 @@ class Settings(BaseSettings):
     EMAIL_OTP_EXPIRE_MINUTES: int = 10
     EMAIL_OTP_MAX_ATTEMPTS: int = 5
     EMAIL_OTP_RESEND_COOLDOWN_SECONDS: int = 60
+    # app/core/config.py
+# Add these settings inside your Settings class
+
+    PASSWORD_RESET_OTP_EXPIRE_MINUTES: int = 10
+    PASSWORD_RESET_OTP_MAX_ATTEMPTS: int = 5
+    PASSWORD_RESET_OTP_RESEND_COOLDOWN_SECONDS: int = 60
 
 
 settings = Settings()
