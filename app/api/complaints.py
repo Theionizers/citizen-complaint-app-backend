@@ -1,7 +1,11 @@
-from fastapi import APIRouter, Depends,HTTPException,UploadFile,File
+from pathlib import Path
+from uuid import uuid4
+
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
-from app.core.dependencies import require_role
+from app.core.dependencies import get_current_user, require_role
 from app.db.database import get_db
 from app.models import Complaint, Department, Service, User,Role
 from app.schemas.complaint import ComplaintCreate, ComplaintResponse,ComplaintStatusUpdate,ComplaintAssignment,AdminOfficerResponse,OfficerDepartmentUpdate
@@ -13,6 +17,48 @@ router = APIRouter(
     prefix="/complaints",
     tags=["Complaints"]
 )
+
+PHOTOS_DIR = Path("uploads/complaints")
+ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp"}
+ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
+
+
+def _get_complaint_photo_dir(complaint_id: int) -> Path:
+    complaint_dir = PHOTOS_DIR / str(complaint_id)
+    complaint_dir.mkdir(parents=True, exist_ok=True)
+    return complaint_dir
+
+
+def _authorize_photo_access(
+    complaint_id: int,
+    current_user: User,
+    db: Session,
+):
+    complaint = (
+        db.query(Complaint)
+        .filter(Complaint.id == complaint_id)
+        .first()
+    )
+
+    if complaint is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Complaint not found"
+        )
+
+    if current_user.role.name == "admin":
+        return complaint
+
+    if (
+        current_user.role.name == "officer"
+        and complaint.assigned_officer_id == current_user.id
+    ):
+        return complaint
+
+    raise HTTPException(
+        status_code=403,
+        detail="You are not allowed to view complaint photos"
+    )
 
 
 @router.post(
@@ -162,6 +208,18 @@ def update_complaint_status(
             status_code=400,
             detail="Invalid complaint status"
         )
+
+    if data.status == "in_progress":
+        note = (data.officer_note or "").strip()
+        if not note:
+            raise HTTPException(
+                status_code=400,
+                detail="Officer note is required when moving a complaint to in_progress"
+            )
+        complaint.officer_note = note
+
+    elif data.officer_note is not None:
+        complaint.officer_note = data.officer_note.strip() or None
 
     complaint.status = data.status
 
@@ -374,6 +432,134 @@ def transcribe_complaint_audio(
             status_code=500,
             detail=f"Audio transcription failed: {str(e)}"
         )
+
+@router.post(
+    "/{complaint_id}/photos",
+    response_model=dict
+)
+async def upload_complaint_photos(
+    complaint_id: int,
+    files: list[UploadFile] = File(...),
+    current_user: User = Depends(require_role("citizen")),
+    db: Session = Depends(get_db)
+):
+    complaint = (
+        db.query(Complaint)
+        .filter(
+            Complaint.id == complaint_id,
+            Complaint.citizen_id == current_user.id
+        )
+        .first()
+    )
+
+    if complaint is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Complaint not found"
+        )
+
+    if not files:
+        raise HTTPException(
+            status_code=400,
+            detail="At least one photo is required"
+        )
+
+    complaint_dir = _get_complaint_photo_dir(complaint_id)
+    saved_files = []
+
+    for file in files:
+        if file.content_type not in ALLOWED_IMAGE_TYPES:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid file type for {file.filename or 'uploaded file'}"
+            )
+
+        original_extension = Path(file.filename or "").suffix.lower()
+
+        if original_extension not in ALLOWED_EXTENSIONS:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Unsupported file extension for {file.filename or 'uploaded file'}"
+            )
+
+        file_bytes = await file.read()
+
+        if len(file_bytes) == 0:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Empty file: {file.filename or 'uploaded file'}"
+            )
+
+        saved_name = f"{uuid4().hex}{original_extension}"
+        file_path = complaint_dir / saved_name
+        file_path.write_bytes(file_bytes)
+        saved_files.append(saved_name)
+
+    return {
+        "complaint_id": complaint_id,
+        "uploaded_files": saved_files
+    }
+
+
+@router.get(
+    "/{complaint_id}/photos",
+    response_model=dict
+)
+def list_complaint_photos(
+    complaint_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    _authorize_photo_access(complaint_id, current_user, db)
+
+    complaint_dir = _get_complaint_photo_dir(complaint_id)
+    filenames = sorted(
+        file.name
+        for file in complaint_dir.iterdir()
+        if file.is_file()
+    )
+
+    return {
+        "complaint_id": complaint_id,
+        "photos": [
+            {
+                "filename": filename,
+                "url": f"/complaints/{complaint_id}/photos/{filename}"
+            }
+            for filename in filenames
+        ]
+    }
+
+
+@router.get(
+    "/{complaint_id}/photos/{filename}",
+)
+def get_complaint_photo(
+    complaint_id: int,
+    filename: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    _authorize_photo_access(complaint_id, current_user, db)
+
+    safe_filename = Path(filename).name
+
+    if safe_filename != filename or safe_filename in {"", ".", ".."}:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid photo file name"
+        )
+
+    file_path = _get_complaint_photo_dir(complaint_id) / safe_filename
+
+    if not file_path.exists() or not file_path.is_file():
+        raise HTTPException(
+            status_code=404,
+            detail="Complaint photo not found"
+        )
+
+    return FileResponse(file_path)
+
 
 @router.get(
     "/{complaint_id}",

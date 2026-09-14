@@ -63,7 +63,8 @@ def create_officer(
         email=data.email,
         password_hash=hash_password(data.password),
         role_id=officer_role.id,
-        department_id=department.id
+        department_id=department.id,
+        is_email_verified=True
     )
 
     db.add(officer)
