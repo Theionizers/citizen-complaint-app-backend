@@ -50,6 +50,12 @@ def _authorize_photo_access(
         return complaint
 
     if (
+        current_user.role.name == "citizen"
+        and complaint.citizen_id == current_user.id
+    ):
+        return complaint
+
+    if (
         current_user.role.name == "officer"
         and complaint.assigned_officer_id == current_user.id
     ):
@@ -420,6 +426,18 @@ def transcribe_complaint_audio(
     audio: UploadFile = File(...),
     current_user: User = Depends(require_role("citizen")),
 ):
+    if not audio.filename:
+        raise HTTPException(
+            status_code=400,
+            detail="Audio filename is missing."
+        )
+
+    if not audio.filename.lower().endswith(".wav"):
+        raise HTTPException(
+            status_code=415,
+            detail="Only WAV audio files are currently supported."
+        )
+
     try:
         transcription = transcribe_audio(audio.file)
 
@@ -427,7 +445,15 @@ def transcribe_complaint_audio(
             "text": transcription
         }
 
+    except ValueError as e:
+        raise HTTPException(
+            status_code=400,
+            detail=str(e)
+        )
+
     except Exception as e:
+        print("Transcription error:", repr(e))
+
         raise HTTPException(
             status_code=500,
             detail=f"Audio transcription failed: {str(e)}"
