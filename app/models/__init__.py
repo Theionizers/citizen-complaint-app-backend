@@ -10,4 +10,5 @@ __all__ = [
     "User",
     "Department",
     "Service",
+    "Complaint"
 ]
