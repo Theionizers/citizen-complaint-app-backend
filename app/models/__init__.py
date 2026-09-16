@@ -1,7 +1,6 @@
 from app.models.role import Role
 from app.models.user import User
 from app.models.complaint import Complaint
-__all__ = ["Role", "User","Complaint"]
 from app.models.role import Role
 from app.models.user import User
 from app.models.department import Department
