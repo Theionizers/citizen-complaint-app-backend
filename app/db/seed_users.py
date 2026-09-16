@@ -50,7 +50,8 @@ def seed_users():
                 name="Test Admin",
                 email="admin@ozoco.com",
                 password_hash=hash_password("Admin@123"),
-                role_id=admin_role.id
+                role_id=admin_role.id,
+                is_email_verified=True,
             )
 
             db.add(admin)
