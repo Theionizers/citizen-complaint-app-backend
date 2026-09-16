@@ -10,19 +10,17 @@ class Settings(BaseSettings):
 
     OPENAI_API_KEY: str
 
-    # SMTP settings
-    SMTP_HOST: str
-    SMTP_PORT: int = 465
-    SMTP_USERNAME: str
-    SMTP_PASSWORD: str
-    EMAIL_FROM: str
+    HOSTINGER_API_KEY: str
+    HOSTINGER_FROM_EMAIL: str
+    HOSTINGER_MAILBOX_RESOURCE_ID: str
 
     FRONTEND_URL: str
 
     EMAIL_VERIFICATION_TOKEN_EXPIRE_MINUTES: int = 30
 
     model_config = SettingsConfigDict(
-        env_file=".env"
+        env_file=".env",
+        extra="ignore",
     )
     EMAIL_OTP_EXPIRE_MINUTES: int = 10
     EMAIL_OTP_MAX_ATTEMPTS: int = 5

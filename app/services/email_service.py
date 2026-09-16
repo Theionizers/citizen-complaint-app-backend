@@ -1,9 +1,13 @@
-import smtplib
-import ssl
+import logging
 
-from email.message import EmailMessage
+from hostinger_mail_api.api.send_api import SendApi
+from hostinger_mail_api.api_client import ApiClient
+from hostinger_mail_api.configuration import Configuration
+from hostinger_mail_api.models.v1_send_request import V1SendRequest
 
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 def send_email(
@@ -11,33 +15,27 @@ def send_email(
     subject: str,
     html: str,
 ):
-    message = EmailMessage()
-
-    message["From"] = settings.EMAIL_FROM
-    message["To"] = to_email
-    message["Subject"] = subject
-
-    message.set_content(
-        "Please open this email in an HTML-compatible email client."
+    request = V1SendRequest(
+        to=[to_email],
+        subject=subject,
+        text="Please open this email in an HTML-compatible email client.",
+        html=html,
     )
 
-    message.add_alternative(
-        html,
-        subtype="html"
+    configuration = Configuration(
+        access_token=settings.HOSTINGER_API_KEY,
     )
 
-    context = ssl.create_default_context()
-
-    with smtplib.SMTP_SSL(
-        settings.SMTP_HOST,
-        settings.SMTP_PORT,
-        context=context,
-        timeout=30,
-    ) as server:
-
-        server.login(
-            settings.SMTP_USERNAME,
-            settings.SMTP_PASSWORD,
+    try:
+        with ApiClient(configuration) as api_client:
+            api = SendApi(api_client)
+            api.send_email(
+                mailbox_resource_id=settings.HOSTINGER_MAILBOX_RESOURCE_ID,
+                v1_send_request=request,
+            )
+    except Exception as error:
+        logger.error(
+            "Hostinger email delivery failed: %s",
+            type(error).__name__,
         )
-
-        server.send_message(message)
+        raise RuntimeError("Unable to send email") from error
