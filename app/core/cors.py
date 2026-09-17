@@ -8,6 +8,7 @@ def setup_cors(app):
             "http://localhost:5173",
             "http://127.0.0.1:5173",
             "https://citizen-app-frontend.vercel.app",
+            "https://www.janamaan.com",
         ],
         allow_credentials=True,
         allow_methods=["*"],
