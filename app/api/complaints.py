@@ -205,8 +205,7 @@ def update_complaint_status(
 
     allowed_statuses = {
         "under_review",
-        "in_progress",
-        "resolved"
+        "in_progress"
     }
 
     if data.status not in allowed_statuses:
@@ -224,6 +223,72 @@ def update_complaint_status(
             )
         complaint.officer_note = note
 
+    elif data.officer_note is not None:
+        complaint.officer_note = data.officer_note.strip() or None
+
+    complaint.status = data.status
+
+    db.commit()
+    db.refresh(complaint)
+
+    return complaint
+
+
+@router.patch(
+    "/admin/{complaint_id}/status",
+    response_model=ComplaintResponse
+)
+def update_admin_complaint_status(
+    complaint_id: int,
+    data: ComplaintStatusUpdate,
+    current_user: User = Depends(require_role("admin")),
+    db: Session = Depends(get_db)
+):
+    complaint = (
+        db.query(Complaint)
+        .filter(Complaint.id == complaint_id)
+        .first()
+    )
+
+    if complaint is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Complaint not found"
+        )
+
+    if complaint.status == "closed":
+        raise HTTPException(
+            status_code=400,
+            detail="Closed complaints cannot be updated"
+        )
+
+    allowed_statuses = {
+        "under_review",
+        "in_progress",
+        "resolved",
+        "closed"
+    }
+
+    if data.status not in allowed_statuses:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid complaint status"
+        )
+
+    if data.status == "closed" and complaint.status != "resolved":
+        raise HTTPException(
+            status_code=400,
+            detail="A complaint must be resolved before it can be closed"
+        )
+
+    if data.status == "in_progress":
+        note = (data.officer_note or "").strip()
+        if not note:
+            raise HTTPException(
+                status_code=400,
+                detail="Officer note is required when moving a complaint to in_progress"
+            )
+        complaint.officer_note = note
     elif data.officer_note is not None:
         complaint.officer_note = data.officer_note.strip() or None
 
