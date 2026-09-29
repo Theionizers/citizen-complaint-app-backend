@@ -5,12 +5,16 @@ from app.api.rbac import router as rbac_router
 from app.api.complaints import router as complaints_router
 from app.core.cors import setup_cors
 from app.api.admin import router as admin_router
+from app.api.chatbot import router as chatbot_router
+from app.core.rate_limit import limiter
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 app = FastAPI(
     title="OZOCO AI Citizen Service Platform",
     version="1.0.0"
 )
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 setup_cors(app)
 @app.get("/")
@@ -21,6 +25,7 @@ app.include_router(auth_router)
 app.include_router(rbac_router)
 app.include_router(complaints_router)
 app.include_router(admin_router)
+app.include_router(chatbot_router)
 
 from fastapi import APIRouter, Depends
 

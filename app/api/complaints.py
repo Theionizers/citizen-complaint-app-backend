@@ -2,8 +2,8 @@ from pathlib import Path
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
-from fastapi.responses import FileResponse
-from sqlalchemy.orm import Session
+from fastapi.responses import FileResponse, StreamingResponse
+from sqlalchemy.orm import Session, joinedload
 
 from app.core.dependencies import get_current_user, require_role
 from app.db.database import get_db
@@ -11,6 +11,7 @@ from app.models import Complaint, Department, Service, User,Role
 from app.schemas.complaint import ComplaintCreate, ComplaintResponse,ComplaintStatusUpdate,ComplaintAssignment,AdminOfficerResponse,OfficerDepartmentUpdate
 from app.services.complaint_router import route_complaint
 from app.services.transcription import transcribe_audio
+from app.services.complaint_export import build_complaints_workbook
 
 
 router = APIRouter(
@@ -462,6 +463,35 @@ def update_officer_department(
         "email": officer.email,
         "department_id": officer.department_id
     }
+
+@router.get("/admin/export")
+def export_complaints_excel(
+    current_user: User = Depends(require_role("admin")),
+    db: Session = Depends(get_db),
+):
+    complaints = (
+        db.query(Complaint)
+        .options(
+            joinedload(Complaint.citizen),
+            joinedload(Complaint.service),
+            joinedload(Complaint.department),
+            joinedload(Complaint.assigned_officer),
+        )
+        .order_by(Complaint.created_at.desc())
+        .all()
+    )
+    workbook_bytes = build_complaints_workbook(complaints)
+
+    return StreamingResponse(
+        iter([workbook_bytes]),
+        media_type=(
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        ),
+        headers={
+            "Content-Disposition": 'attachment; filename="janamaan-complaints.xlsx"'
+        },
+    )
+
 
 @router.get(
     "/admin/{complaint_id}",
